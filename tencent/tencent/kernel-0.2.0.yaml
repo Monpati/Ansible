@@ -1,0 +1,45 @@
+- hosts: $ip
+  remote_user: root
+
+  tasks:
+    - name: create data
+      file:
+        path: /data
+        state: directory
+
+    - name: update dns
+      copy:
+        content: |
+          nameserver 119.29.29.29
+          nameserver 114.114.114.114
+        dest: /etc/resolv.conf
+
+    - name: chattr dns
+      command: chattr +ai /etc/resolv.conf
+
+    - name: install wget
+      yum:
+        name: wget
+        state: present
+        update_cache: yes
+
+    - name: download kernel
+      get_url:
+        url: http://www.jmat.cn/dfy/kernel-5.4.119-19.0006.tl2.x86_64.rpm
+        dest: /data
+        mode: 0644
+
+    - name: update kernel
+      yum:
+        name: /data/kernel-5.4.119-19.0006.tl2.x86_64.rpm
+        state: present
+    
+    - name: set dracut
+      command: dracut --force --add-drivers mpt3sas --kver=5.10.81-1.el7.x86_64
+
+    - name: set grub
+      command: grub2-set-default 0
+
+    - name: reboot
+      command: reboot
+      ignore_errors: yes

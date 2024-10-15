@@ -1,0 +1,151 @@
+- hosts: $ip
+  remote_user: root
+
+  tasks:
+    - name: update hostname
+      hostname:
+        name: $hostname
+
+    - name: add LC_ALL
+      lineinfile:
+        path: /etc/profile
+        line: 'export LC_ALL=en_US.UTF8'
+
+    - name: source profile
+      shell: source /etc/profile
+
+    - name: set ulimit
+      shell: ulimit -n 1048576
+
+    - name: update limits
+      blockinfile:
+        path: /etc/security/limits.conf
+        block: |
+          *       soft    nofile  1048576
+          *       hard    nofile  1048576
+
+    - name: set dirty_writeback_centisecs
+      command: echo 5 > /proc/sys/vm/dirty_writeback_centisecs
+
+    - name: set dirty_background_bytes
+      command: echo 1048576 > /proc/sys/vm/dirty_background_bytes
+
+    - name: set somaxconn
+      command: sysctl -w net.core.somaxconn=10000
+
+    - name: set backlog
+      command: sysctl -w net.ipv4.tcp_max_syn_backlog=100000
+    
+    - name: load settings
+      command: sysctl -p
+
+    - name: get wlnmp
+      command: rpm -ivh http://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
+
+    - name: install wlnmp
+      yum:
+        name: ntpdate
+        state: present
+
+    - name: link zoneinfo to localtime
+      file:
+        src: /usr/share/zoneinfo/Asia/Shanghai
+        dest: /etc/localtime
+        state: link
+
+    - name: set timezone
+      command: echo 'Asia/Shanghai' >/etc/timezone
+
+    - name: update ntpdate
+      command: ntpdate time2.aliyun.com
+
+    - name: get selinux status
+      command: getenforce
+      register: selinux_status
+
+    - name: disable selinux enforcing mode
+      command: setenforce 0
+      when: selinux_status.stdout == 'Enforcing'
+
+    - name: disable selinux permanently
+      lineinfile:
+        path: /etc/sysconfig/selinux
+        regex: '^SELINUX=enforcing'
+        line: 'SELINUX=disabled'
+
+    - name: modify selinux config
+      lineinfile:
+        path: /etc/selinux/config
+        regex: '^SELINUX=enforcing'
+        line: 'SELINUX=disabled'
+
+    - name: stop and disabled firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+    
+    - name: upload disk_stat
+      copy:
+        src: /root/ansible/tencent/disk_stat31.sh
+        dest: /data
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: upload agent
+      copy:
+        src: /root/ansible/tencent/dfy_agent.v1.2.4.tar
+        dest: /usr/local/
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: tar agent
+      unarchive:
+        src: /usr/local/dfy_agent.v1.2.4.tar
+        dest: /usr/local/
+        remote_src: true
+
+    - name: move agent
+      command: mv dfy_agent.v1.2.4 dfy_agent
+      args:
+        chdir: /usr/local/
+
+    - name: upload config
+      copy:
+        src: /root/devices/ip/config_v0.1.0.sh
+        dest: /tmp/
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: start config
+      command: /tmp/config_v0.1.0.sh
+
+    - name: download installer
+      get_url:
+        url: http://120.233.19.189:9080/installer-0.7.21.tar.gz
+        dest: /data
+        mode: 0644
+
+    - name: tar installer
+      unarchive:
+        src: /data/installer-0.7.21.tar.gz
+        dest: /data
+        remote_src: true
+
+#实机执行
+    - name: reload daemon
+      command: systemctl daemon-reload
+
+    - name: enable agent
+      systemd:
+        name: dfy_agent
+        enabled: yes
+        state: started
+    
+    - name: restart agent
+      systemd:
+        name: dfy_agent
+        state: restarted

@@ -1,0 +1,40 @@
+- hosts: $ip
+  remote_user: root
+
+  tasks:
+    - name: upload iptables config
+      copy:
+        src: /root/ansible/tencent/iptables_v0.1.0.sh
+        dest: /tmp/
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: start iptables config
+      command: /tmp/iptables_v0.1.0.sh
+
+    - name: update authorized_keys
+      copy: 
+        content: |
+          ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDdYQEbOQrnXG5MFxBhpXrYOZrZnMSwnlZrHSVj/0PS6hpXv0UjFGg2QPuN6nof1Sb3To/IyEUBJwKXL1Ysd3Fz/abAN9jZBdl6Nv6RpqQerpjvNArfn7BK0KWCpbhwxWUv/oWaxKaBPKlpQgYKnoed3NHn3dKba/6Izo8RR1TMoBoX7eboAYB5zHmfeN9DSZpa2QQE3ZcrrrqAyS8/+0soOVeE1Z0jgsREZxo6munST3p6XUV4opqOgRvbRJFMuFOITtXewckyZXeE2aA6Xc1l+qp7xmdLnFydtQ5xm0CPALigfKuAYtr2of5p3crz9/B2EVsgiDA/4om4kMAZ58Nr root@master
+          ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEc2/xXEUORX22I/EHtxjQdE6STAIvL+wSKPoshyGXnZcEQQzSQWZZpRjT2htKXhKTI96F0TfF7FDU0rge8PmQ7yQsECOD2vVuMa57uWTUwKUXZxdeyz+zYU8HXDM8vwMfBPrHQq5AcLpwdvQ4kZkEouGUQD7yKLyor7RKEtPSBgAKpdAXnYXq31LD/C0oThFOZOhu+A/bwGev2tlBgFVdz4N5s92lAzHHqOdzMhVOtSeA+ZMoaqbwJqUUTY+gIt3aaIu6TjxtWgim8NfTMeZXwhDiECFgoL073tQZGFtBVFiS5NOj7c8y2BotJoGVwLyOy+F2i8qN0YtTi/HGJvD/ xg@xgdeMacBook-Pro.local
+        dest: /root/.ssh/authorized_keys
+
+    - name: update hosts.allow
+      copy:
+        content: |
+          sshd:49.65.114.209
+          sshd:117.149.198.115
+          sshd:122.228.246.249
+        dest: /etc/hosts.allow
+
+    - name: update hosts.deny
+      copy:
+        content: |
+          sshd:ALL
+        dest: /etc/hosts.deny
+
+    - name: restart ssh
+      systemd:
+        name: sshd
+        state: restarted

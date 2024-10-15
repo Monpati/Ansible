@@ -1,0 +1,31 @@
+- hosts: $ip
+  remote_user: root
+
+  tasks:
+    - name: upload detection
+      copy:
+        src: /root/ansible/tencent/detection_v0.2.0.sh
+        dest: /tmp
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: start detection
+      command: /tmp/detection_v0.2.0.sh
+
+    - name: upload partition
+      copy:
+        src: /root/ansible/tencent/partition_v0.5.0.sh
+        dest: /tmp
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: start partition
+      command: /tmp/partition_v0.5.0.sh
+      ignore_errors: yes
+
+    - name: mount disks
+      command: mount -a
+      ignore_errors: yes
+

@@ -1,0 +1,38 @@
+- hosts: pt-dev
+  remote_user: root
+
+  tasks:
+    - name: cp kernel
+      copy: src=./centos/kernel-ml-5.10.81-1.el7.x86_64.rpm dest=/tmp/ owner=root group=root mode=0644
+
+    - name: cp kernel-devel
+      copy: src=./centos/kernel-ml-devel-5.10.81-1.el7.x86_64.rpm dest=/tmp/ owner=root group=root mode=0644
+
+    - name: update kernel
+      yum:
+        name: /tmp/kernel-ml-5.10.81-1.el7.x86_64.rpm
+        state: present
+
+    - name: update kernel-devel
+      yum:
+        name: /tmp/kernel-ml-devel-5.10.81-1.el7.x86_64.rpm
+        state: present
+
+    - name: rm kernel
+      file:
+        path: /tmp/kernel-ml-5.10.81-1.el7.x86_64.rpm
+        state: absent
+
+    - name: rm kernel-devel
+      file:
+        path: /tmp/kernel-ml-devel-5.10.81-1.el7.x86_64.rpm
+        state: absent
+        
+    - name: set dracut
+      command: dracut --force --add-drivers mpt3sas --kver=5.10.81-1.el7.x86_64
+
+    - name: set grub
+      command: grub2-set-default 0
+
+    - name: reboot
+      reboot:

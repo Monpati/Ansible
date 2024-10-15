@@ -1,0 +1,21 @@
+- hosts: pt-dev
+  remote_user: root
+
+  tasks:
+    - name: cp trust
+      copy: src=./iptables/iplist-hndx.txt dest=/root/ owner=root group=root mode=0644
+
+    - name: rename trust
+      command: mv /root/iplist-hndx.txt /root/iplist.txt
+
+    - name: cp drop
+      copy: src=./iptables/iplist_drop_ctcc.txt dest=/root/ owner=root group=root mode=0644
+
+    - name: rename drop
+      command: mv /root/iplist_drop_ctcc.txt /root/iplist_drop.txt
+
+    - name: cp iptables
+      copy: src=./iptables/IpTables.sh dest=/root/ owner=root group=root mode=0644
+
+    - name: run iptables.sh
+      command: /root/IpTables.sh

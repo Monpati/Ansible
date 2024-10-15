@@ -1,0 +1,21 @@
+- hosts: $ip
+  remote_user: root
+
+  tasks:
+    - name: adjust sshd_config port
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port 22'
+        line: 'Port 36000'
+
+    - name: adjust sshd_config authentication
+      blockinfile:
+        path: /etc/ssh/sshd_config
+        block: |
+          RSAAuthentication yes
+          PubkeyAuthentication yes
+          StrictModes no
+        marker: "#PubkeyAuthentication yes"
+
+    - name: adjust passauth
+      command: sed -i '/PasswordAuthentication/s/yes/no/' /etc/ssh/sshd_config

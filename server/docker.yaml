@@ -1,0 +1,110 @@
+- hosts: pt-dev
+  remote_user: root
+
+  tasks:
+    - name: update dns
+      copy:
+        content: |
+          nameserver 114.114.114.114
+          nameserver 8.8.8.8
+        dest: /etc/resolv.conf
+
+    - name: chattr dns
+      command: chattr +ai /etc/resolv.conf
+      
+    - name: set ulimit
+      shell: ulimit -n 1048576
+    - name: update limits
+      blockinfile:
+        path: /etc/security/limits.conf
+        block: |
+          *       soft    nofile  1048576
+          *       hard    nofile  1048576
+        marker: ""
+
+    - name: yum ntpdate
+      yum:
+        name: ntpdate
+        state: present
+    - name: set localtime
+      file:
+        src: /usr/share/zoneinfo/Asia/Shanghai
+        dest: /etc/localtime
+        state: link
+    - name: set timezone
+      command: echo 'Asia/Shanghai' >/etc/timezone
+    - name: update ntpdate
+      command: ntpdate time2.aliyun.com
+
+    - name: get selinux status
+      command: getenforce
+      register: selinux_status
+    - name: disable selinux enforcing mode
+      command: setenforce 0
+      when: selinux_status.stdout == 'Enforcing'
+    - name: disable selinux permanently
+      lineinfile:
+        path: /etc/sysconfig/selinux
+        regex: '^SELINUX=enforcing'
+        line: 'SELINUX=disabled'
+    - name: modify selinux config
+      lineinfile:
+        path: /etc/selinux/config
+        regex: '^SELINUX=enforcing'
+        line: 'SELINUX=disabled'
+
+    - name: stop and disabled firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+
+    - name: mkdir /etc/docker
+      file:
+        path: /etc/docker
+        state: directory
+    - name: remove docker daemon.json
+      file:
+        path: /etc/docker/daemon.json
+        state: absent
+    - name: set docker daemon.json
+      blockinfile:
+        path: /etc/docker/daemon.json
+        block: |
+          {
+            "exec-opts": ["native.cgroupdriver=systemd"],
+            "insecure-registries": ["mirrors.dfycdn.com"]
+          }
+        marker: ""
+        create: yes
+    - name: yum docker utils
+      yum:
+        name: 
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+    - name: set docker source
+      command: yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+    - name: set makecache
+      command: yum makecache fast
+    - name: install docker
+      yum:
+        name: docker-ce-19.03.8  
+        state: present      
+    - name: modify docker config
+      lineinfile:
+        path: /usr/lib/systemd/system/docker.service
+        regex: 'ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock'
+        line: 'ExecStart=/usr/bin/dockerd --config-file=/etc/docker/daemon.json'
+    - name: reload docker daemon
+      command: systemctl daemon-reload 
+    - name: enable docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted

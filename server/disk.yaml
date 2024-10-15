@@ -1,0 +1,19 @@
+- hosts: pt-dev
+  remote_user: root
+
+  tasks:
+    - name: update disk.sh
+      copy: 
+        src: ./disk/disk.sh 
+        dest: /tmp 
+        owner: root
+        group: root 
+        mode: 0755
+
+    - name: run disk.sh
+      command: /tmp/disk.sh
+
+    - name: rm disk.sh
+      file:
+        path: /tmp/disk.sh
+        state: absent
