@@ -25,13 +25,13 @@
 
     - name: download kernel
       get_url:
-        url: http://www.jmat.cn/dfy/kernel-5.4.119-19.0006.tl2.x86_64.rpm
+        url: 
         dest: /data
         mode: 0644
 
     - name: update kernel
       yum:
-        name: /data/kernel-5.4.119-19.0006.tl2.x86_64.rpm
+        name: 
         state: present
     
     - name: set dracut
