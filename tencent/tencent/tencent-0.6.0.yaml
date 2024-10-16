@@ -40,7 +40,7 @@
       command: sysctl -p
 
     - name: get wlnmp
-      command: rpm -ivh http://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
+      command: rpm -ivh http://
 
     - name: install wlnmp
       yum:
@@ -125,7 +125,7 @@
 
     - name: download installer
       get_url:
-        url: http://120.233.19.189:9080/installer-0.7.21.tar.gz
+        url: http://
         dest: /data
         mode: 0644
 
